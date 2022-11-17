@@ -1,0 +1,30 @@
+﻿@page "/"
+@using RabbitMQ.Client;
+@using RabbitMQ.Client.Events;
+@using System.Text;
+<PageTitle>Index</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+<SurveyPrompt Title="How is Blazor working for you?" />
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var factory = new ConnectionFactory { HostName = "localhost", Port = 4100 };
+        var connection = factory.CreateConnection();
+        using var channel = connection.CreateModel();
+        channel.QueueDeclare("event-listener");
+        var consumer = new EventingBasicConsumer(channel);
+        consumer.Received += (model, eventArgs) =>
+        {
+            var body = eventArgs.Body.ToArray();
+            var message = Encoding.UTF8.GetString(body);
+            Console.WriteLine(message);
+        };
+        channel.BasicConsume(queue: "event-listener", autoAck: true, consumer: consumer);
+
+    }
+
+}
